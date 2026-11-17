@@ -1,0 +1,122 @@
+# Prompt — jogo com placar que vira APK
+
+Copie TODO o bloco abaixo e cole no Codex, dentro do seu terminal do laboratório
+(na pasta `~/work`). O Codex vai fazer 6 perguntas e depois construir o jogo com você.
+
+```text
+Você é meu par de programação e professor. Vamos criar um JOGO para celular, em
+HTML, CSS e JavaScript, que roda no navegador (GitHub Pages) e também vira um APK
+Android compilado pelo GitHub Actions. Explique em português simples, sem parar a
+cada arquivo.
+
+PASSO 0 — CONFERIR O AMBIENTE
+Rode `gh auth status`. Se eu não estiver logado no GitHub, peça para eu rodar:
+  gh auth login --web --git-protocol https
+e espere. Não faça login por mim e nunca peça ou mostre tokens.
+
+PASSO 1 — FAÇA SÓ ESTAS 6 PERGUNTAS (todas de uma vez) E ESPERE AS RESPOSTAS
+1. Qual tipo de jogo? (1) Quiz  (2) Memória  (3) Desvio  (4) Alvos  (5) Palavra secreta
+2. Qual o tema ou a matéria? (ex.: inglês, ciências, Bíblia, futebol, animais)
+3. Qual o nome ORIGINAL do jogo?
+4. Como salvar o progresso?
+   (A) local — só no celular; apagou o app, perdeu
+   (B) persistente — arquivo na pasta Documents; apagou e instalou de novo, recupera
+   (C) nuvem — Planilha Google pelo Apps Script; ranking com todos e recupera em
+       qualquer celular com apelido e PIN
+5. Nome do repositório no GitHub (minúsculas e hífen, ex.: quiz-de-ingles)?
+6. Cor principal (nome ou #RRGGBB)?
+
+PASSO 2 — USE O MODELO PRONTO (não comece do zero)
+- Copie o modelo testado:  cp -r /opt/modelos/jogo-apk ./NOME-DO-REPOSITORIO
+  e trabalhe SÓ dentro dessa pasta. Leia o README.md dela antes de mexer.
+- NÃO altere: docs/jogo/placar.js, docs/jogo/placar-ui.js, android/,
+  .github/workflows/apk.yml, scripts/. Eles já funcionam e foram testados.
+- Edite docs/jogo/config.js (mantendo o formato JSON):
+    nome, modo ("local" | "persistente" | "nuvem"), cor, emoji, descricao,
+    orientacao ("retrato" para quiz/memória/palavra; "retrato" ou "paisagem" para
+    desvio/alvos), e pacote = io.github.LOGIN.NOME — LOGIN vem de
+    `gh api user --jq .login` em minúsculas com hífen trocado por _, e NOME é o
+    repositório sem hífens. Depois rode:  node scripts/preparar.mjs
+- Substitua o jogo de exemplo: docs/jogo/index.html, estilo.css, regras.js e
+  jogo.js, e os testes em tests/regras.test.mjs. Mantenha no index.html a ordem
+  dos scripts (config.js, placar.js, placar-ui.js, regras.js, jogo.js) e o
+  <aside id="painel-placar">.
+- Ligue o jogo ao placar exatamente como o exemplo faz:
+    PlacarUI.montar(document.getElementById('painel-placar'));
+    await Placar.iniciar();
+    await Placar.registrarPartida(pontos, dadosOpcionais);  // fim de cada partida
+
+PASSO 3 — O JOGO ESCOLHIDO (curto, divertido, original)
+Nada de copiar nome, personagens, sons ou visual de jogos famosos. Sem bibliotecas,
+sem CDNs, sem imagens externas: use emojis, CSS, SVG ou canvas. Funciona com o
+dedo (toque) e também com mouse/teclado. Botões grandes (mín. 48 px).
+(1) QUIZ: 10 perguntas do tema, 4 alternativas cada, 15 s por pergunta. Mostre
+    certo/errado com a explicação curta. Pontos = 100 por acerto + segundos que
+    sobraram. Perguntas embaralhadas a cada partida.
+(2) MEMÓRIA: pares de cartas com emojis ou palavras do tema (ex.: palavra em
+    inglês e o emoji). Nível 1 com 6 pares, nível 2 com 8 pares. Pontos = 1000 −
+    15 por jogada − 2 por segundo (mínimo 0) por nível.
+(3) DESVIO: canvas. O jogador fica embaixo e se move arrastando o dedo (ou
+    setas). Objetos do tema caem; uns são bons (+10), outros tiram vida. 3 vidas.
+    A velocidade aumenta com o tempo. Use requestAnimationFrame com tempo real
+    (delta), para rodar igual em celular lento e rápido.
+(4) ALVOS: em 30 s, alvos do tema aparecem em lugares aleatórios por pouco tempo.
+    Acerto +10, combo de 5 acertos dobra os pontos, alvo “proibido” −15. Fica mais
+    rápido a cada 10 s.
+(5) PALAVRA SECRETA: palavras do tema com uma dica. Teclado de letras na tela
+    (acentos contam como a letra sem acento). 6 erros por palavra. Pontos = 100 +
+    20 por chance que sobrou; as palavras seguem até errar uma.
+Regras puras (sorteio, pontos, vitória/derrota) ficam em regras.js, recebendo o
+sorteio como parâmetro para poder testar. Escreva pelo menos 6 testes em
+tests/regras.test.mjs (pontuação, fim de jogo, casos de borda).
+Telas: início (como jogar), partida, fim (pontos + “Jogar de novo”) e o painel do
+placar. Respeite o atributo hidden. Nunca use innerHTML com texto do jogador.
+
+PASSO 4 — CONFERIR
+Rode  node scripts/preparar.mjs  e  node --test tests/*.test.mjs  até tudo passar.
+Revise: caminhos relativos, sem segredos, sem dependências externas.
+
+PASSO 5 — SÓ NO MODO NUVEM (C)
+Me guie, passo a passo, no navegador do meu Chromebook:
+1. Criar uma Planilha Google nova chamada “Placar - NOME DO JOGO”.
+2. Extensões › Apps Script; apagar o código e colar o conteúdo de
+   apps-script/Code.gs (mostre o caminho do arquivo; ajuste antes PONTOS_MAXIMOS
+   para a maior pontuação possível do meu jogo).
+3. Selecionar a função instalar e clicar em Executar; autorizar com MINHA conta
+   (em “app não verificado”: Avançado › Acessar).
+4. Implantar › Nova implantação › App da Web; Executar como: Eu; Quem pode acessar:
+   Qualquer pessoa. Copiar a URL que termina em /exec e colar aqui.
+Quando eu colar a URL, teste com:  curl -sL "URL?acao=saude"  (deve ter "ok":true).
+Se vier página de login ou “Acesso negado”, explique o que refazer. Depois coloque a
+URL em "urlExec" no config.js e rode de novo preparar e testes.
+
+PASSO 6 — GITHUB, APK E PÁGINA DE DOWNLOAD (SÓ COM MINHA APROVAÇÃO)
+Mostre a árvore de arquivos, o resultado dos testes e os comandos abaixo, e ESPERE
+eu aprovar. Depois:
+  git init -b main   (se faltar git user.name/user.email, pergunte e configure)
+  git add . && git commit -m "Primeira versão do jogo"
+  gh repo create NOME --public --source=. --remote=origin
+  bash scripts/criar-chave.sh
+  git push -u origin main
+  gh api -X POST "repos/LOGIN/NOME/pages" -f "source[branch]=main" -f "source[path]=/docs"
+  gh run watch
+Se o push for recusado por causa de “workflow”, peça para eu rodar
+  gh auth refresh -s workflow
+e tente de novo. Nunca force-push, nunca apague nem sobrescreva repositórios.
+No fim mostre:
+- o site: https://LOGIN.github.io/NOME/  (pode levar 1–2 min para aparecer)
+- o APK: https://github.com/LOGIN/NOME/releases/latest/download/jogo.apk
+- um checklist do que testar no celular e, no modo persistente, como recuperar
+  o progresso depois de reinstalar.
+Cada novo git push gera uma versão nova do APK automaticamente.
+```
+
+## Para o professor
+
+- O modelo em `/opt/modelos/jogo-apk` já tem o APK, a página de download, o Apps
+  Script e os três modos de salvamento testados (inclusive num emulador Android 15:
+  jogar, escolher a pasta, desinstalar, reinstalar e recuperar).
+- O APK é compilado pelo GitHub Actions do aluno (grátis em repositório público),
+  em cerca de 1 a 2 minutos depois do push.
+- Se um celular recusar o APK, o aluno abre o site, toca em “Jogar no navegador” e
+  escolhe “Adicionar à tela inicial” no Chrome.

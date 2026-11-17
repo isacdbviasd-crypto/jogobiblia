@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#c99a22">
+  <title>Santo Quiz | Quiz Bíblico</title>
+  <style>
+    :root { --gold:#c99a22; --gold-light:#f3d77a; --ink:#211b10; --paper:#fffaf0; }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; min-height:100vh; color:var(--ink);
+      font-family:Georgia, "Times New Roman", serif;
+      background:radial-gradient(circle at top, #fff6d9 0, #ead9a7 45%, #c9b47a 100%);
+      display:grid; place-items:center; padding:22px;
+    }
+    .app {
+      width:min(720px,100%); background:var(--paper); border:2px solid var(--gold);
+      border-radius:22px; padding:clamp(22px,5vw,42px);
+      box-shadow:0 18px 50px #49360c30;
+    }
+    header { text-align:center; margin-bottom:26px; }
+    .symbol { font-size:38px; }
+    h1 { margin:8px 0 4px; font-size:clamp(2rem,7vw,3.2rem); color:#8a6410; }
+    .subtitle { margin:0; color:#6d5a32; font-family:Arial,sans-serif; }
+    .stats { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font:600 .9rem Arial,sans-serif; color:#725719; margin:20px 0; }
+    .progress { height:9px; background:#eee2bf; border-radius:99px; overflow:hidden; margin:10px 0 25px; }
+    .bar { height:100%; width:0; background:linear-gradient(90deg,#a87910,var(--gold-light)); transition:width .25s; }
+    .question { font-size:clamp(1.25rem,4vw,1.7rem); line-height:1.4; margin:16px 0 22px; }
+    .answers { display:grid; gap:11px; }
+    button {
+      font:600 1rem Arial,sans-serif; border:1px solid #d7bd78; border-radius:12px;
+      padding:14px 16px; background:#fff; color:#35280c; cursor:pointer; text-align:left;
+      transition:transform .12s, background .12s, border-color .12s;
+    }
+    button:hover:not(:disabled) { transform:translateY(-2px); border-color:var(--gold); background:#fff7df; }
+    button:focus-visible { outline:3px solid #6b4b08; outline-offset:2px; }
+    button:disabled { cursor:default; opacity:1; }
+    .answer.correct { background:#e4f4df; border-color:#5a9a4e; }
+    .answer.wrong { background:#fbe4df; border-color:#c56a5b; }
+    .feedback { min-height:52px; margin:18px 0; line-height:1.45; font: .98rem Arial,sans-serif; }
+    .primary { display:block; width:100%; text-align:center; background:#a87910; color:white; border:0; margin-top:12px; }
+    .primary:hover:not(:disabled) { background:#8c650d; }
+    .hidden { display:none; }
+    .result { text-align:center; }
+    .result h2 { color:#8a6410; font-size:2rem; }
+    .result-score { font-size:3rem; color:#a87910; margin:14px; }
+    .small { color:#756747; font: .82rem Arial,sans-serif; text-align:center; margin-top:22px; }
+    @media (max-width:420px) { .stats { font-size:.82rem; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="symbol" aria-hidden="true">✦</div>
+      <h1>Santo Quiz</h1>
+      <p class="subtitle">Teste seus conhecimentos sobre a Bíblia</p>
+    </header>
+
+    <section id="game">
+      <div class="stats">
+        <span id="progressText">Pergunta 1 de 10</span>
+        <span id="scoreText">Acertos: 0</span>
+        <span id="bestText">Recorde: 0</span>
+      </div>
+      <div class="progress" aria-label="Progresso do quiz"><div class="bar" id="bar"></div></div>
+      <div class="question" id="question" aria-live="polite"></div>
+      <div class="answers" id="answers"></div>
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+      <button class="primary hidden" id="nextBtn">Próxima pergunta</button>
+    </section>
+
+    <section id="result" class="result hidden">
+      <h2>Quiz concluído!</h2>
+      <p>Seu resultado foi:</p>
+      <div class="result-score" id="finalScore">0/10</div>
+      <p id="message"></p>
+      <button class="primary" id="restartBtn">Jogar novamente</button>
+    </section>
+    <p class="small">Seu progresso e seu recorde ficam salvos neste dispositivo.</p>
+  </main>
+
+  <script>
+    const questions = [
+      { q:"Quem construiu a arca para sobreviver ao dilúvio?", a:["Moisés","Noé","Abraão","Davi"], correct:1, note:"Noé construiu a arca seguindo as orientações de Deus (Gênesis 6)." },
+      { q:"Em qual cidade Jesus nasceu?", a:["Jerusalém","Nazaré","Belém","Jericó"], correct:2, note:"Os relatos do nascimento de Jesus situam esse acontecimento em Belém (Mateus 2:1)." },
+      { q:"Quem derrotou o gigante Golias?", a:["Davi","Salomão","Josué","Samuel"], correct:0, note:"Davi enfrentou Golias e venceu (1 Samuel 17)." },
+      { q:"Quantos discípulos Jesus escolheu como apóstolos?", a:["10","12","7","40"], correct:1, note:"Jesus escolheu doze apóstolos (Lucas 6:13)." },
+      { q:"Qual é o primeiro livro da Bíblia?", a:["Êxodo","Salmos","Mateus","Gênesis"], correct:3, note:"Gênesis é o primeiro livro da Bíblia." },
+      { q:"Quem foi lançado na cova dos leões?", a:["Elias","Daniel","Jonas","Paulo"], correct:1, note:"Daniel foi lançado na cova dos leões e foi protegido por Deus (Daniel 6)." },
+      { q:"Qual destes homens recebeu os Dez Mandamentos?", a:["Moisés","Pedro","Isaías","José"], correct:0, note:"Moisés recebeu as tábuas da Lei no monte Sinai (Êxodo 31:18)." },
+      { q:"Qual foi o sinal do pacto de Deus com Noé após o dilúvio?", a:["Uma estrela","Uma oliveira","O arco-íris","Uma coluna de fogo"], correct:2, note:"O arco-íris foi dado como sinal da aliança (Gênesis 9:12–13)." },
+      { q:"Quem foi engolido por um grande peixe?", a:["Jó","Jonas","André","Estevão"], correct:1, note:"A história de Jonas está no livro que leva seu nome (Jonas 1:17)." },
+      { q:"Qual oração Jesus ensinou aos discípulos?", a:["O Credo","O Pai-Nosso","A oração de Ana","O cântico de Maria"], correct:1, note:"Jesus ensinou a oração conhecida como Pai-Nosso (Mateus 6:9–13)." }
+    ];
+
+    let order = [], current = 0, score = 0, answered = false;
+    const bestKey = "santoQuizRecorde";
+    let best = Number(localStorage.getItem(bestKey) || 0);
+    const $ = id => document.getElementById(id);
+
+    function shuffle(items) {
+      const copy = [...items];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function startGame() {
+      order = shuffle(questions);
+      current = 0; score = 0; answered = false;
+      $("game").classList.remove("hidden");
+      $("result").classList.add("hidden");
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      answered = false;
+      const item = order[current];
+      $("progressText").textContent = `Pergunta ${current + 1} de ${order.length}`;
+      $("scoreText").textContent = `Acertos: ${score}`;
+      $("bestText").textContent = `Recorde: ${best}`;
+      $("bar").style.width = `${(current / order.length) * 100}%`;
+      $("question").textContent = item.q;
+      $("feedback").textContent = "";
+      $("nextBtn").classList.add("hidden");
+      $("nextBtn").textContent = current === order.length - 1 ? "Ver resultado" : "Próxima pergunta";
+      $("answers").replaceChildren();
+      item.a.forEach((answer, index) => {
+        const button = document.createElement("button");
+        button.className = "answer";
+        button.textContent = `${String.fromCharCode(65 + index)}. ${answer}`;
+        button.addEventListener("click", () => chooseAnswer(index));
+        $("answers").append(button);
+      });
+    }
+
+    function chooseAnswer(index) {
+      if (answered) return;
+      answered = true;
+      const item = order[current];
+      const buttons = [...$("answers").children];
+      buttons.forEach((button, i) => {
+        button.disabled = true;
+        if (i === item.correct) button.classList.add("correct");
+        else if (i === index) button.classList.add("wrong");
+      });
+      if (index === item.correct) {
+        score++;
+        $("feedback").textContent = "Muito bem! " + item.note;
+      } else {
+        $("feedback").textContent = "Ainda não! " + item.note;
+      }
+      $("scoreText").textContent = `Acertos: ${score}`;
+      $("nextBtn").classList.remove("hidden");
+    }
+
+    function finishGame() {
+      $("game").classList.add("hidden");
+      $("result").classList.remove("hidden");
+      $("bar").style.width = "100%";
+      $("finalScore").textContent = `${score}/${order.length}`;
+      const percent = score / order.length;
+      $("message").textContent = percent === 1 ? "Excelente! Você acertou todas!" :
+        percent >= .7 ? "Muito bom! Você conhece bastante sobre a Bíblia." :
+        percent >= .4 ? "Bom esforço! Continue aprendendo e praticando." :
+        "Continue estudando. Cada rodada é uma nova oportunidade de aprender!";
+      if (score > best) {
+        best = score;
+        localStorage.setItem(bestKey, String(best));
+      }
+    }
+
+    $("nextBtn").addEventListener("click", () => {
+      if (!answered) return;
+      if (current === order.length - 1) finishGame();
+      else { current++; renderQuestion(); }
+    });
+    $("restartBtn").addEventListener("click", startGame);
+    startGame();
+  </script>
+</body>
+</html>
